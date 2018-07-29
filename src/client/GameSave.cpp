@@ -9,6 +9,7 @@
 #include "GameSave.h"
 #include "simulation/SimulationData.h"
 #include "ElementClasses.h"
+#include <fstream>
 extern "C"
 {
 	#include "hmap.h"
@@ -798,6 +799,7 @@ void GameSave::readOPS(char * data, int dataLength)
 	//Read particle data
 	if (partsData && partsPosData)
 	{
+std::cout << "part\n";
 		int newIndex = 0, fieldDescriptor, tempTemp;
 		int posCount, posTotal, partsPosDataIndex = 0;
 		if (fullW * fullH * 3 > partsPosDataLen)
@@ -812,10 +814,18 @@ void GameSave::readOPS(char * data, int dataLength)
 		unsigned int i = 0;
 		unsigned int saved_x, saved_y, x, y;
 		newIndex = 0;
+std::ofstream stream("output.txt", std::ios::binary);
+if(stream.is_open())
+std::cout << "OK\n";
+stream << fullW << "\n";
+stream << fullH << "\n";
 		for (saved_y = 0; saved_y < fullH; saved_y++)
 		{
+//std::cout << "new y" << std::endl;
 			for (saved_x = 0; saved_x < fullW; saved_x++)
 			{
+char c = '.';
+//std::cout << "new x" << std::endl;
 				//Read total number of particles at this position
 				posTotal = 0;
 				posTotal |= partsPosData[partsPosDataIndex++]<<16;
@@ -837,6 +847,10 @@ void GameSave::readOPS(char * data, int dataLength)
 					y = saved_y + fullY;
 					fieldDescriptor = partsData[i+1];
 					fieldDescriptor |= partsData[i+2] << 8;
+//fprintf(stdout, "[%d T %d]: %d %d, [%d, %d], [%d, %d]\n", i, (unsigned)partsData[i], x, y, (unsigned)partsData[i+1], (unsigned)partsData[i+2], (unsigned)partsData[i+3], (unsigned)partsData[i+4]);
+//fflush(stdout);
+if((unsigned)partsData[i+4] == 156)
+c = '+';
 					if (x >= fullW || y >= fullH)
 					{
 						fprintf(stderr, "Out of range [%d]: %d %d, [%d, %d], [%d, %d]\n", i, x, y, (unsigned)partsData[i+1], (unsigned)partsData[i+2], (unsigned)partsData[i+3], (unsigned)partsData[i+4]);
@@ -911,6 +925,8 @@ void GameSave::readOPS(char * data, int dataLength)
 					{
 						if(i >= partsDataLen) goto fail;
 						particles[newIndex].ctype = partsData[i++];
+
+std::cout << "ctype: " << particles[newIndex].ctype << std::endl;
 						//Read additional bytes
 						if(fieldDescriptor & 0x200)
 						{
@@ -1077,8 +1093,11 @@ void GameSave::readOPS(char * data, int dataLength)
 					//note: PSv was used in version 77.0 and every version before, add something in PSv too if the element is that old
 					newIndex++;
 				}
+stream << c;
 			}
+stream << '\n';
 		}
+stream.close();
 		if (soapLinkData)
 		{
 			unsigned int soapLinkDataPos = 0;
